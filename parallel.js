@@ -8,6 +8,7 @@ module.exports = parallel;
 
 /**
  * Runs iterator over provided array elements in parallel
+ * Optimized: track job count instead of using Object.keys()
  *
  * @param   {array|object} list - array or object (named list) to iterate over
  * @param   {function} iterator - iterator to run
@@ -17,9 +18,11 @@ module.exports = parallel;
 function parallel(list, iterator, callback)
 {
   var state = initState(list);
+  var jobsCount = 0;
 
   while (state.index < (state['keyedList'] || list).length)
   {
+    jobsCount++;
     iterate(list, iterator, state, function(error, result)
     {
       if (error)
@@ -28,8 +31,9 @@ function parallel(list, iterator, callback)
         return;
       }
 
+      jobsCount--;
       // looks like it's the last one
-      if (Object.keys(state.jobs).length === 0)
+      if (jobsCount === 0)
       {
         callback(null, state.results);
         return;
